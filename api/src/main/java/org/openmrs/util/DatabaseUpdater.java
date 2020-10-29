@@ -60,6 +60,7 @@ import org.openmrs.annotation.Authorized;
 import org.openmrs.api.context.Context;
 import org.openmrs.liquibase.ChangeLogDetective;
 import org.openmrs.liquibase.ChangeLogVersionFinder;
+import org.openmrs.liquibase.ChangeSetExecutorCallback;
 import org.openmrs.liquibase.LiquibaseProvider;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -120,11 +121,26 @@ public class DatabaseUpdater {
 	/**
 	 * Convenience method to run the changesets using Liquibase to bring the database up to a version
 	 * compatible with the code
-	 *
-	 * @see #executeChangelog(String, ChangeSetExecutorCallback)
 	 */
 	public static void executeChangelog() throws DatabaseUpdateException {
-		executeChangelog( null, (ChangeSetExecutorCallback) null);
+		LiquibaseProvider liquibaseProvider = new DatabaseUpdaterLiquibaseProvider();
+		
+		List<String> changeLogs;
+		try {
+			String version = changeLogDetective.getInitialLiquibaseSnapshotVersion(CONTEXT, liquibaseProvider);
+			changeLogs = changeLogDetective.getUnrunLiquibaseUpdateFileNames(version, CONTEXT, liquibaseProvider);
+		}
+		catch (Exception e) {
+			throw new DatabaseUpdateException("Error while trying to find database changes to run", e);
+		}
+		
+		if (changeLogs.isEmpty()) {
+			return;
+		}
+		
+		for (String changeLog : changeLogs) {
+			executeChangelog(changeLog, (ChangeSetExecutorCallback) null);
+		}
 	}
 	
 	/**
@@ -143,22 +159,7 @@ public class DatabaseUpdater {
 		
 		executeChangelog(changelog, (ChangeSetExecutorCallback) null);
 	}
-	
-	/**
-	 * Interface used for callbacks when updating the database. Implement this interface and pass it to
-	 * {@link DatabaseUpdater#executeChangelog(String, ChangeSetExecutorCallback)}
-	 */
-	public interface ChangeSetExecutorCallback {
-		
-		/**
-		 * This method is called after each changeset is executed.
-		 *
-		 * @param changeSet the liquibase changeset that was just run
-		 * @param numChangeSetsToRun the total number of changesets in the current file
-		 */
-		public void executing(ChangeSet changeSet, int numChangeSetsToRun);
-	}
-	
+
 	/**
 	 * Executes the given changelog file. This file is assumed to be on the classpath.
 	 *
