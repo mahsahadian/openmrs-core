@@ -19,6 +19,12 @@
 	<name>OpenMRS</name>
 	<description>Master project for the modules of OpenMRS</description>
 	<url>http://openmrs.org</url>
+	
+	<properties>
+      <sonar.projectKey>mahsahadian_openmrs-core</sonar.projectKey>
+      <sonar.organization>mahsahadian</sonar.organization>
+      <sonar.host.url>https://sonarcloud.io</sonar.host.url>
+    </properties>
 
 	<issueManagement>
 		<system>JIRA</system>
